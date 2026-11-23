@@ -3,50 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src https://script.google.com https://*.googleusercontent.com; form-action 'none'">
   <title>ระบบรับแจ้งอุบัติเหตุทางการแพทย์</title>
   <link rel="icon" href="favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="favicon.png">
-  <script>
-    window.addEventListener('message', function (e) {
-      if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/i.test(e.origin)) return;
-      if (e.data && e.data.type === 'sdi-hello' && e.source) {
-        e.source.postMessage({ type: 'sdi-ok' }, e.origin);
-      }
-    });
-  </script>
   <style>
     html, body { margin: 0; width: 100%; height: 100%; background: #f2f8f8; }
     iframe { display: block; width: 100%; height: 100%; border: 0; }
-    #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-      gap: .75rem; font: 15px system-ui, 'Noto Sans Thai', Tahoma, sans-serif; color: #115e59;
-      background: #f2f8f8; transition: opacity .3s; z-index: 1; }
-    #loading.hide { opacity: 0; pointer-events: none; }
+    #loading[hidden], #frame-warning[hidden] { display: none !important; }
+    #loading, #frame-warning { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: .75rem; padding: 1.5rem; box-sizing: border-box; text-align: center;
+      font: 15px system-ui, 'Noto Sans Thai', Tahoma, sans-serif; color: #115e59;
+      background: #f2f8f8; z-index: 1; }
+    #loading.hide { opacity: 0; pointer-events: none; transition: opacity .3s; }
     #loading .spin { width: 22px; height: 22px; border: 3px solid #99f6e4; border-top-color: #0d9488;
       border-radius: 50%; animation: s 1s linear infinite; }
+    #frame-warning { z-index: 2147483647; color: #7f1d1d; background: #fff7ed; }
+    #frame-warning a { color: #115e59; font-weight: 700; }
     @keyframes s { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div id="loading"><span class="spin"></span>กำลังโหลดระบบ…</div>
+  <div id="loading" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>กำลังโหลดระบบ…</div>
+  <div id="frame-warning" role="alert" hidden>
+    <strong>เพื่อความปลอดภัย กรุณาเปิดระบบจากหน้าเว็บโดยตรง</strong>
+    <a id="open-standalone" target="_blank" rel="noopener noreferrer">เปิดหน้าเว็บในแท็บใหม่</a>
+  </div>
   <script>
     (function () {
-      var p = [
-      'wBXY942bpR3Yh9zYlhXZvoHa',
-      '3J1aqNFenVXYOZDMUR0XudWW',
-      'xlkbtEHbzoEZKp0Z4BTVxoWN',
-      'TZGV0kVUQJXc5YVb4MXUn1UO',
-      'CdjdUJnRygzb4J2Y5Z2SB9yc',
-      'vM3byNWYt9SbvNmLlx2Zv92Z',
-      'uQHcpJ3Yz9yL6MHc0RHa'
-      ];
-      var f = document.createElement('iframe');
-      f.id = 'app-frame';
-      f.title = 'ระบบรับแจ้งอุบัติเหตุทางการแพทย์';
-      f.referrerPolicy = 'strict-origin-when-cross-origin';
-      f.allow = 'clipboard-write';
-      f.onload = function () { var l = document.getElementById('loading'); if (l) l.classList.add('hide'); };
-      f.src = atob(p.join('').split('').reverse().join(''));
-      document.body.appendChild(f);
+      var APP_URL = 'https://script.google.com/macros/s/AKfycbxo82FrTv7B9MgQs8mV9qrPQY4TfS5j1U0xgJJdJ3lq-nIqYgn_DT06NaugxSjkRwhz/exec?action=app';
+      var appFrame = null;
+      window.addEventListener('message', function (e) {
+        if (!appFrame || e.source !== appFrame.contentWindow) return;
+        if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/i.test(e.origin)) return;
+        if (e.data && e.data.type === 'sdi-hello') {
+          e.source.postMessage({ type: 'sdi-ok' }, e.origin);
+        }
+      });
+
+      if (window.self !== window.top) {
+        document.getElementById('loading').hidden = true;
+        var warning = document.getElementById('frame-warning');
+        warning.hidden = false;
+        document.getElementById('open-standalone').href = window.location.href;
+        return;
+      }
+
+      var frame = document.createElement('iframe');
+      frame.id = 'app-frame';
+      frame.title = 'ระบบรับแจ้งอุบัติเหตุทางการแพทย์';
+      frame.referrerPolicy = 'no-referrer';
+      frame.onload = function () {
+        var loading = document.getElementById('loading');
+        if (loading) loading.classList.add('hide');
+      };
+      appFrame = frame;
+      frame.src = APP_URL;
+      document.body.appendChild(frame);
     })();
   </script>
 </body>
